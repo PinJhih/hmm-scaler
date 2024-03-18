@@ -26,8 +26,8 @@ def set_interval(t):
 
     # send update to metric-collector
     url = f"{__COLLECTOR_URL}/interval/{t}"
-    # TODO: Error handling
     res = requests.put(url)
+    # TODO: Error handling
 
     msg = {"message": f"interval is set to {t}"}
     return jsonify(msg), 200
@@ -40,6 +40,11 @@ def get_targets():
 
 def add_target(ns, name):
     config_mgr.add_target(ns, name)
+    url = f"{__COLLECTOR_URL}/targets"
+    targets = config_mgr.get_targets()
+    res = requests.put(url, json=targets)
+    # TODO: Error handling
+
     msg = {"message": f"{name} in {ns} is added"}
     return jsonify(msg), 200
 

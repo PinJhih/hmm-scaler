@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from .controllers import collector
 
 app = Flask(__name__)
 
@@ -10,14 +11,10 @@ def index():
 
 @app.route("/interval/<int:t>", methods=["PUT"])
 def set_interval(t):
-    # TODO: call method of controllers
-    msg = {"message": f"interval is set to {t}"}
-    return jsonify(msg), 200
+    return collector.set_interval(t)
 
 
 @app.route("/targets", methods=["PUT"])
 def set_targets():
-    # TODO: call method of controllers
     targets = request.get_json()
-    msg = {"message": f"targets is updated"}
-    return jsonify(msg), 200
+    return collector.set_targets(targets)
