@@ -1,9 +1,26 @@
 from flask import jsonify
-import json
+import requests
 
-# TODO: get config from api-server
 __interval = 30
 __targets = {}
+
+
+def __set_targets(data):
+    global __targets
+    for target in data:
+        ns = target["namespace"]
+        names = target["names"]
+        __targets[ns] = names
+
+
+def __init():
+    # TODO: error handling
+    res = requests.get("http://localhost:7000/config")
+    config = res.json()
+
+    global __interval
+    __interval = config["interval"]
+    __set_targets(config["targets"])
 
 
 def set_interval(t):
@@ -14,12 +31,9 @@ def set_interval(t):
 
 
 def set_targets(targets):
-    global __targets
-
-    for target in targets:
-        ns = target["namespace"]
-        names = target["names"]
-        __targets[ns] = names
-    
+    __set_targets(targets)
     msg = {"message": f"targets are updated"}
     return jsonify(msg), 200
+
+
+__init()
