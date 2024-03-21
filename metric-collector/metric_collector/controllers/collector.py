@@ -1,8 +1,11 @@
 from flask import jsonify
 import requests
+import threading
+import time
 
 __interval = 30
 __targets = {}
+__thread = None
 
 
 def __set_targets(data):
@@ -13,6 +16,13 @@ def __set_targets(data):
         __targets[ns] = names
 
 
+def __collect_metrics():
+    while True:
+        # TODO: request to Prometheus
+        print("collect metrics...")
+        time.sleep(__interval)
+
+
 def __init():
     # TODO: error handling
     res = requests.get("http://localhost:7000/config")
@@ -21,6 +31,11 @@ def __init():
     global __interval
     __interval = config["interval"]
     __set_targets(config["targets"])
+
+    global __thread
+    __thread = threading.Thread(target=__collect_metrics)
+    __thread.daemon = True
+    __thread.start()
 
 
 def set_interval(t):
