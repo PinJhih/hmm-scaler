@@ -1,12 +1,25 @@
-# TODO: read from file and DB
+import json
+from pathlib import Path
+
+__CURRENT_DIR = str(Path(__file__).parent.resolve())
+__CONFIG_FILE_PATH = __CURRENT_DIR + "/config.json"
+
 __interval = 30
-__targets = {
-    "social-network": [
-        "compose-post-service",
-        "home-timeline-redis",
-        "home-timeline-service",
-    ]
-}
+__targets = {}
+
+
+def __load_from_file():
+    global __interval, __targets
+    with open(__CONFIG_FILE_PATH, "r") as file:
+        config = json.load(file)
+        __interval = config["interval"]
+        __targets = config["targets"]
+
+
+def __save_to_file():
+    with open(__CONFIG_FILE_PATH, "w") as file:
+        config = {"interval": __interval, "targets": __targets}
+        json.dump(config, file, indent=4)
 
 
 def get_interval():
@@ -16,25 +29,26 @@ def get_interval():
 def set_interval(t):
     global __interval
     __interval = t
-    # TODO: write to file
+    __save_to_file()
 
 
 def get_targets():
-    targets = []
-    for ns, names in __targets.items():
-        target = {"namespace": ns, "names": list(names)}
-        targets.append(target)
-    return targets
+    return __targets
 
 
 def add_target(ns, name):
     if ns not in __targets.keys():
-        __targets[ns] = set()
-    __targets[ns].add(name)
-    # TODO: add to DB
+        __targets[ns] = []
+
+    if name not in __targets[ns]:
+        __targets[ns].append(name)
+    __save_to_file()
 
 
 def delete_target(ns, name):
     if (ns in __targets.keys()) and (name in __targets[ns]):
         __targets[ns].remove(name)
-    # TODO: delete from DB
+    __save_to_file()
+
+
+__load_from_file()
