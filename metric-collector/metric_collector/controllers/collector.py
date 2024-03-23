@@ -8,19 +8,11 @@ __targets = {}
 __thread = None
 
 
-def __set_targets(data):
-    global __targets
-    for target in data:
-        ns = target["namespace"]
-        names = target["names"]
-        __targets[ns] = names
-
-
 def __collect_metrics():
     while True:
         # TODO: request to Prometheus
-        print("collect metrics...")
         time.sleep(__interval)
+        print(f"collect metrics...")
 
 
 def __init():
@@ -28,9 +20,9 @@ def __init():
     res = requests.get("http://localhost:7000/config")
     config = res.json()
 
-    global __interval
+    global __interval, __targets
     __interval = config["interval"]
-    __set_targets(config["targets"])
+    __targets = config["targets"]
 
     global __thread
     __thread = threading.Thread(target=__collect_metrics)
@@ -46,7 +38,8 @@ def set_interval(t):
 
 
 def set_targets(targets):
-    __set_targets(targets)
+    global __targets
+    __targets = targets
     msg = {"message": f"targets are updated"}
     return jsonify(msg), 200
 
