@@ -10,10 +10,19 @@ __targets = {}
 
 def __load_from_file():
     global __interval, __targets
-    with open(__CONFIG_FILE_PATH, "r") as file:
-        config = json.load(file)
-        __interval = config["interval"]
-        __targets = config["targets"]
+    try:
+        with open(__CONFIG_FILE_PATH, "r") as file:
+            config = json.load(file)
+            __interval = config["interval"]
+            __targets = config["targets"]
+    except FileNotFoundError:
+        with open(__CONFIG_FILE_PATH, "w") as file:
+            default_config = {"interval": 30, "targets": {}}
+            json.dump(default_config, file, indent=4)
+    except:
+        # TODO: Error handling
+        print("[Error][API-Server] Cannot write to config file")
+        pass
 
 
 def __save_to_file():
