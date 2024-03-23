@@ -1,18 +1,19 @@
+from ..models import states
 from flask import jsonify
 import requests
 import threading
 import time
 
 __interval = 30
-__targets = {}
 __thread = None
 
 
-def __collect_metrics():
+def __get_states():
     while True:
-        # TODO: request to Prometheus
         time.sleep(__interval)
-        print(f"collect metrics...")
+        s = states.get_states()
+        url = "http://localhost:7770/detect"
+        requests.post(url, json=s) # TODO: error handling
 
 
 def __init():
@@ -25,7 +26,7 @@ def __init():
     __targets = config["targets"]
 
     global __thread
-    __thread = threading.Thread(target=__collect_metrics)
+    __thread = threading.Thread(target=__get_states)
     __thread.daemon = True
     __thread.start()
 
@@ -38,8 +39,7 @@ def set_interval(t):
 
 
 def set_targets(targets):
-    global __targets
-    __targets = targets
+    states.set_targets(targets)
     msg = {"message": f"targets are updated"}
     return jsonify(msg), 200
 
