@@ -1,13 +1,14 @@
-from ..models import configuration as config_mgr
+from ..models.configuration import Configuration
 from flask import jsonify
 import requests
 
 __COLLECTOR_URL = "http://127.0.0.1:7700"
+config = Configuration()
 
 
 def get_config():
-    interval = config_mgr.get_interval()
-    targets = config_mgr.get_targets()
+    interval = config.get_interval()
+    targets = config.get_targets()
     config = {
         "interval": interval,
         "targets": targets,
@@ -16,15 +17,15 @@ def get_config():
 
 
 def get_interval():
-    t = config_mgr.get_interval()
+    t = config.get_interval()
     interval = {"interval": t}
     return jsonify(interval), 200
 
 
 def set_interval(t):
-    config_mgr.set_interval(t)
+    config.set_interval(t)
 
-    # send update to metric-collector
+    # Send interval to collector
     url = f"{__COLLECTOR_URL}/interval/{t}"
     res = requests.put(url)
     # TODO: Error handling
@@ -34,14 +35,16 @@ def set_interval(t):
 
 
 def get_targets():
-    targets = config_mgr.get_targets()
+    targets = config.get_targets()
     return jsonify(targets), 200
 
 
 def add_target(ns, name):
-    config_mgr.add_target(ns, name)
+    config.add_target(ns, name)
+
+    # Send targets to collector
     url = f"{__COLLECTOR_URL}/targets"
-    targets = config_mgr.get_targets()
+    targets = config.get_targets()
     res = requests.put(url, json=targets)
     # TODO: Error handling
 
@@ -50,6 +53,12 @@ def add_target(ns, name):
 
 
 def delete_target(ns, name):
-    config_mgr.delete_target(ns, name)
+    config.delete_target(ns, name)
+
+    # Send targets to collector
+    url = f"{__COLLECTOR_URL}/targets"
+    targets = config.get_targets()
+    res = requests.put(url, json=targets)
+
     msg = {"message": f"{name} in {ns} is deleted"}
     return jsonify(msg), 200

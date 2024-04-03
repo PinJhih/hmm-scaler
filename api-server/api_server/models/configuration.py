@@ -1,63 +1,64 @@
 import json
 from pathlib import Path
 
-__CURRENT_DIR = str(Path(__file__).parent.resolve())
-__CONFIG_FILE_PATH = __CURRENT_DIR + "/config.json"
 
-__interval = 30
-__targets = {}
+class Configuration:
+    __CURRENT_DIR = str(Path(__file__).parent.resolve())
+    __CONFIG_FILE_PATH = __CURRENT_DIR + "/config.json"
 
+    def __init__(self) -> None:
+        self.__interval = 30
+        self.__targets = {}
 
-def __load_from_file():
-    global __interval, __targets
-    try:
-        with open(__CONFIG_FILE_PATH, "r") as file:
-            config = json.load(file)
-            __interval = config["interval"]
-            __targets = config["targets"]
-    except FileNotFoundError:
-        with open(__CONFIG_FILE_PATH, "w") as file:
-            default_config = {"interval": 30, "targets": {}}
-            json.dump(default_config, file, indent=4)
-    except:
-        # TODO: Error handling
-        print("[Error][API-Server] Cannot write to config file")
-        pass
+        # Read from file
+        self.__load()
 
+    def __load(self) -> None:
+        try:
+            with open(Configuration.__CONFIG_FILE_PATH, "r") as file:
+                config = json.load(file)
+                self.__interval = config["interval"]
+                self.__targets = config["targets"]
+        except FileNotFoundError:
+            self.__save()
+        except:
+            # TODO: Error handling
+            print("[Error][API-Server] Cannot read config file")
 
-def __save_to_file():
-    with open(__CONFIG_FILE_PATH, "w") as file:
-        config = {"interval": __interval, "targets": __targets}
-        json.dump(config, file, indent=4)
+    def __save(self) -> None:
+        try:
+            with open(Configuration.__CONFIG_FILE_PATH, "w") as file:
+                config = {"interval": self.__interval, "targets": self.__targets}
+                json.dump(config, file, indent=4)
+        except:
+            # TODO: Error handling
+            print("[Error][API-Server] Cannot write to config file")
 
+    def get_interval(self) -> int:
+        return self.__interval
 
-def get_interval():
-    return __interval
+    def set_interval(self, t: int) -> None:
+        self.__interval = t
+        self.__save()
 
+    def get_targets(self) -> dict:
+        return self.__targets
 
-def set_interval(t):
-    global __interval
-    __interval = t
-    __save_to_file()
+    def add_target(self, ns: str, deploy: str) -> bool:
+        if ns not in self.__targets.keys():
+            self.__targets[ns] = []
 
+        if deploy not in self.__targets[ns]:
+            self.__targets[ns].append(deploy)
+            self.__save()
+            return True
+        return False
 
-def get_targets():
-    return __targets
+    def delete_target(self, ns: str, deploy: str) -> None:
+        if ns not in self.__targets:
+            return False
+        if deploy not in self.__targets[ns]:
+            return False
 
-
-def add_target(ns, name):
-    if ns not in __targets.keys():
-        __targets[ns] = []
-
-    if name not in __targets[ns]:
-        __targets[ns].append(name)
-    __save_to_file()
-
-
-def delete_target(ns, name):
-    if (ns in __targets.keys()) and (name in __targets[ns]):
-        __targets[ns].remove(name)
-    __save_to_file()
-
-
-__load_from_file()
+        self.__targets[ns].remove(deploy)
+        self.__save()
