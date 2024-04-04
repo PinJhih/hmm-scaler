@@ -3,12 +3,12 @@ from flask import jsonify
 import requests
 
 __COLLECTOR_URL = "http://127.0.0.1:7700"
-config = Configuration()
+configuration = Configuration()
 
 
 def get_config():
-    interval = config.get_interval()
-    targets = config.get_targets()
+    interval = configuration.get_interval()
+    targets = configuration.get_targets()
     config = {
         "interval": interval,
         "targets": targets,
@@ -17,13 +17,13 @@ def get_config():
 
 
 def get_interval():
-    t = config.get_interval()
+    t = configuration.get_interval()
     interval = {"interval": t}
     return jsonify(interval), 200
 
 
 def set_interval(t):
-    config.set_interval(t)
+    configuration.set_interval(t)
 
     # Send interval to collector
     url = f"/interval/{t}"
@@ -34,15 +34,15 @@ def set_interval(t):
 
 
 def get_targets():
-    targets = config.get_targets()
+    targets = configuration.get_targets()
     return jsonify(targets), 200
 
 
 def add_target(ns, name):
-    config.add_target(ns, name)
+    configuration.add_target(ns, name)
 
     # Send targets to collector
-    targets = config.get_targets()
+    targets = configuration.get_targets()
     __send_to_collector("/targets", targets)
 
     msg = {"message": f"{name} in {ns} is added"}
@@ -50,10 +50,10 @@ def add_target(ns, name):
 
 
 def delete_target(ns, name):
-    config.delete_target(ns, name)
+    configuration.delete_target(ns, name)
 
     # Send targets to collector
-    targets = config.get_targets()
+    targets = configuration.get_targets()
     __send_to_collector("/targets", targets)
 
     msg = {"message": f"{name} in {ns} is deleted"}
@@ -68,5 +68,5 @@ def __send_to_collector(path, json=None):
         else:
             return requests.put(url, json=json)
     except:
-        #TODO: Exception handling
+        # TODO: Exception handling
         print("[Error][API-Server] Cannot send to collector")
