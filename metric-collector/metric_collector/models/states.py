@@ -1,17 +1,15 @@
-__targets = {}
+class States:
+    def __init__(self, targets) -> None:
+        self.__targets = targets
 
+    def set_targets(self, targets) -> None:
+        self.__targets = targets
 
-def __get_metrics():
-    # TODO: get metrics from Prometheus
-    print(f"collect metrics...")
+    def get_all(self) -> dict:
+        # TODO: maps to states
+        self.__get_metrics()
+        print("Get states...")
 
-
-def get_states():
-    __get_metrics()
-    # TODO: convert metrics to states
-    return {}
-
-
-def set_targets(target):
-    global __targets
-    __targets = target
+    def __get_metrics(self):
+        # TODO: query Prometheus
+        print("Query Prom...")

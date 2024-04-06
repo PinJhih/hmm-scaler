@@ -1,8 +1,8 @@
-from flask import Flask, jsonify, request
-from .controllers import collector
+from flask import Flask, request
+from .controllers.collector import Collector
 
 app = Flask(__name__)
-
+collector = Collector()
 
 @app.route("/", methods=["GET"])
 def index():
