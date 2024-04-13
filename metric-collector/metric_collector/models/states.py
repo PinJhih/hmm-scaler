@@ -12,5 +12,5 @@ class States:
         metrics = self.__metrics.get_all()
 
         # TODO: Convert metrics to states
-        print("Convert to states...")
+        print(metrics)
         return {}
