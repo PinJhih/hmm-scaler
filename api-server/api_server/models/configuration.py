@@ -54,7 +54,7 @@ class Configuration:
             return True
         return False
 
-    def delete_target(self, ns: str, deploy: str) -> None:
+    def delete_target(self, ns: str, deploy: str) -> bool:
         if ns not in self.__targets:
             return False
         if deploy not in self.__targets[ns]:
