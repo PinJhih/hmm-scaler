@@ -1,15 +1,16 @@
+from .metrics import Metrics
+
+
 class States:
     def __init__(self, targets) -> None:
-        self.__targets = targets
+        self.__metrics = Metrics(targets)
 
     def set_targets(self, targets) -> None:
-        self.__targets = targets
+        self.__metrics = targets
 
     def get_all(self) -> dict:
-        # TODO: maps to states
-        self.__get_metrics()
-        print("Get states...")
+        metrics = self.__metrics.get_all()
 
-    def __get_metrics(self):
-        # TODO: query Prometheus
-        print("Query Prom...")
+        # TODO: Convert metrics to states
+        print("Convert to states...")
+        return {}
