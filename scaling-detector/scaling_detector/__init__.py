@@ -1,6 +1,8 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
+from .controllers.detector import Detector
 
 app = Flask(__name__)
+detector = Detector()
 
 
 @app.route("/", methods=["GET"])
@@ -10,5 +12,7 @@ def index():
 
 @app.route("/detect", methods=["POST"])
 def detect():
+    metrics = request.data
+    detector.detect(metrics)
     msg = {"message": "OK!"}
     return jsonify(msg), 200

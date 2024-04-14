@@ -1,4 +1,4 @@
-from ..models.states import States
+from ..models.metrics import Metrics
 from flask import jsonify
 import requests
 import threading
@@ -12,7 +12,7 @@ class Collector:
             config = res.json()
 
             self.__interval = config["interval"]
-            self.__states = States(config["targets"])
+            self.__metrics = Metrics(config["targets"])
 
             self.__worker_thread = self.__create_thread()
             self.__worker_thread.start()
@@ -20,7 +20,7 @@ class Collector:
             # TODO: Error handling
             print("[Error][Collector] Cannot get config from API-Server")
 
-    def __fetch_states(self, interval):
+    def __fetch_metrics(self, interval):
         print(f"[Info][Collector] Worker thread (interval={interval} sec) started.")
 
         elapsed_time = 0
@@ -28,14 +28,19 @@ class Collector:
             time.sleep(1)
             elapsed_time += 1
             if elapsed_time == interval and interval == self.__interval:
+                metrics = self.__metrics.get_all()
+                try:
+                    requests.post("http://localhost:7770/detect", json=metrics)
+                except:
+                    # TODO: Error handling
+                    print(f"[Error][Collector] Cannot send metrics to detector.")
+
                 elapsed_time = 0
-                states = self.__states.get_all()
-                # TODO: Send states to detector
         print(f"[Info][Collector] Worker thread (interval={interval} sec) killed.")
 
     def __create_thread(self):
         interval = self.__interval
-        thread = threading.Thread(target=self.__fetch_states, args=[interval])
+        thread = threading.Thread(target=self.__fetch_metrics, args=[interval])
         thread.daemon = True
         return thread
 
@@ -43,11 +48,10 @@ class Collector:
         self.__interval = t
         self.__worker_thread = self.__create_thread()
         self.__worker_thread.start()
-
         msg = {"message": f"Interval is set to {t}"}
         return jsonify(msg), 200
 
     def set_targets(self, targets):
-        self.__states.set_targets(targets)
+        self.__metrics.set_targets(targets)
         msg = {"message": f"targets are updated"}
         return jsonify(msg), 200
