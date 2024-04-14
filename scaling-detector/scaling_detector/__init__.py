@@ -12,7 +12,7 @@ def index():
 
 @app.route("/detect", methods=["POST"])
 def detect():
-    metrics = request.data
+    metrics = request.json
     detector.detect(metrics)
     msg = {"message": "OK!"}
     return jsonify(msg), 200

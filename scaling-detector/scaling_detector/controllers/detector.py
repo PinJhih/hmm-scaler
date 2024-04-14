@@ -1,5 +1,10 @@
 from ..models.states import States
 
+
 class Detector:
     def detect(self, metric):
-        states = States(metric)
+        labels = ["cpu"]
+        scales = [1]
+        states = States(metric, labels, scales)
+
+        print(states.get_all())
