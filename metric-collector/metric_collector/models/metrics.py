@@ -2,7 +2,7 @@ from prometheus_api_client import PrometheusConnect
 
 
 class Metrics:
-    def __init__(self, targets) -> None:
+    def __init__(self, targets=None, prom_url="http://localhost:9090/") -> None:
         self.set_targets(targets)
         self.__queries = [
             [
@@ -10,18 +10,7 @@ class Metrics:
                 "cpu",
             ],
         ]
-
-        prom_url = "http://10.106.152.99:9090/"
         self.__prom = PrometheusConnect(url=prom_url)
-
-    def set_targets(self, targets) -> None:
-        self.__targets = targets
-
-    def get_all(self) -> dict:
-        metrics = dict()
-        for ns in self.__targets.keys():
-            metrics[ns] = self.__query_prom(ns)
-        return metrics
 
     def __query_prom(self, ns) -> dict:
         metrics = dict()
@@ -57,3 +46,16 @@ class Metrics:
     def __to_pod_label(deploys):
         pods = [f"{deploy}-.*" for deploy in deploys]
         return "|".join(pods)
+
+    def set_targets(self, targets) -> None:
+        self.__targets = targets
+
+    def get_all(self) -> dict:
+        metrics = dict()
+        for ns in self.__targets.keys():
+            metrics[ns] = self.__query_prom(ns)
+        return metrics
+
+    def set_prom(self, url):
+        self.__prom = PrometheusConnect(url=url)
+        print(url)

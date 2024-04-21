@@ -76,6 +76,8 @@ def delete_target(ns, name):
 
 def set_prom(url: str):
     configuration.set_prom(url)
+    __send_to_collector("/prom", {"url": url})
+
     msg = {"message": f"prom url is set to {url}"}
     return jsonify(msg), 200
 

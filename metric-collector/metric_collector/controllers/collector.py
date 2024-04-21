@@ -54,6 +54,7 @@ class Collector:
                     config = res.json()
                     self.set_interval(config["interval"])
                     self.set_targets(config["targets"])
+                    self.set_prom(config["prom"])
                     break
                 except:
                     print(
@@ -78,4 +79,9 @@ class Collector:
     def set_targets(self, targets):
         self.__metrics.set_targets(targets)
         msg = {"message": f"targets are updated"}
+        return jsonify(msg), 200
+
+    def set_prom(self, url):
+        self.__metrics.set_prom(url)
+        msg = {"message": f"Prom url is set to {url}"}
         return jsonify(msg), 200
