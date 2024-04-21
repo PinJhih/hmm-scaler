@@ -2,7 +2,7 @@ from flask import Flask, request
 from .controllers.collector import Collector
 
 app = Flask(__name__)
-collector = Collector()
+collector = Collector(app)
 
 @app.route("/", methods=["GET"])
 def index():
