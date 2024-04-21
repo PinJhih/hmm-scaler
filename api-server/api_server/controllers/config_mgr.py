@@ -6,12 +6,26 @@ __COLLECTOR_URL = "http://127.0.0.1:7700"
 configuration = Configuration()
 
 
+def __send_to_collector(path: str, json=None):
+    url = __COLLECTOR_URL + path
+    try:
+        if json == None:
+            return requests.put(url)
+        else:
+            return requests.put(url, json=json)
+    except:
+        # TODO: Exception handling
+        print("[Error][API-Server] Cannot send to collector")
+
+
 def get_config():
     interval = configuration.get_interval()
     targets = configuration.get_targets()
+    prom = configuration.get_prom()
     config = {
         "interval": interval,
         "targets": targets,
+        "prom": prom,
     }
     return jsonify(config), 200
 
@@ -60,13 +74,12 @@ def delete_target(ns, name):
     return jsonify(msg), 200
 
 
-def __send_to_collector(path, json=None):
-    url = __COLLECTOR_URL + path
-    try:
-        if json == None:
-            return requests.put(url)
-        else:
-            return requests.put(url, json=json)
-    except:
-        # TODO: Exception handling
-        print("[Error][API-Server] Cannot send to collector")
+def set_prom(url: str):
+    configuration.set_prom(url)
+    msg = {"message": f"prom url is set to {url}"}
+    return jsonify(msg), 200
+
+
+def get_prom():
+    prom = {"url": configuration.get_prom()}
+    return jsonify(prom), 200

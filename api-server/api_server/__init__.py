@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from .controllers import config_mgr
 
 app = Flask(__name__)
@@ -37,3 +37,14 @@ def add_target(ns, name):
 @app.route("/targets/<string:ns>/<string:name>", methods=["DELETE"])
 def delete_target(ns, name):
     return config_mgr.delete_target(ns, name)
+
+
+@app.route("/prom", methods=["PUT"])
+def set_prom():
+    url = request.get_json()["url"]
+    return config_mgr.set_prom(url)
+
+
+@app.route("/prom", methods=["GET"])
+def get_prom():
+    return config_mgr.get_prom()

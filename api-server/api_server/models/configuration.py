@@ -7,18 +7,21 @@ class Configuration:
     __CONFIG_FILE_PATH = __CURRENT_DIR + "/config.json"
 
     def __init__(self) -> None:
+        # Default values
         self.__interval = 30
         self.__targets = {}
+        self.__prom = "http://localhost:9090"
 
         # Read from file
         self.__load()
 
     def __load(self) -> None:
         try:
-            with open(Configuration.__CONFIG_FILE_PATH, "r") as file:
+            with open(__class__.__CONFIG_FILE_PATH, "r") as file:
                 config = json.load(file)
                 self.__interval = config["interval"]
                 self.__targets = config["targets"]
+                self.__prom = config["prom"]
         except FileNotFoundError:
             self.__save()
         except:
@@ -27,8 +30,12 @@ class Configuration:
 
     def __save(self) -> None:
         try:
-            with open(Configuration.__CONFIG_FILE_PATH, "w") as file:
-                config = {"interval": self.__interval, "targets": self.__targets}
+            with open(__class__.__CONFIG_FILE_PATH, "w") as file:
+                config = {
+                    "interval": self.__interval,
+                    "targets": self.__targets,
+                    "prom": self.__prom,
+                }
                 json.dump(config, file, indent=4)
         except:
             # TODO: Error handling
@@ -62,3 +69,10 @@ class Configuration:
 
         self.__targets[ns].remove(deploy)
         self.__save()
+
+    def set_prom(self, url: str) -> None:
+        self.__prom = url
+        self.__save()
+
+    def get_prom(self) -> str:
+        return self.__prom
