@@ -35,7 +35,7 @@ class Collector:
                 print(f"[Info][Collector] Worker thread interval is set to {interval}")
 
             if elapsed_time >= self.__interval:
-                metrics = self.__metrics.get_all()
+                metrics = self.__metrics.to_dict()
                 try:
                     requests.post("http://localhost:7770/detect", json=metrics)
                 except:

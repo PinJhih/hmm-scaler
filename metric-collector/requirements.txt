@@ -1,3 +1,4 @@
 flask
 requests
 prometheus_api_client
+pandas

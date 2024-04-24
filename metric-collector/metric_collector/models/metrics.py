@@ -1,3 +1,4 @@
+import pandas as pd
 from prometheus_api_client import PrometheusConnect
 
 
@@ -12,50 +13,75 @@ class Metrics:
         ]
         self.__prom = PrometheusConnect(url=prom_url)
 
-    def __query_prom(self, ns) -> dict:
-        metrics = dict()
-        for q, name in self.__queries:
-            deploys = self.__targets[ns]
-            pod_label = Metrics.__to_pod_label(deploys)
-
-            query = q % f'namespace="{ns}", pod=~"{pod_label}"'
-            res = self.__prom.custom_query(query)
-            values = Metrics.__get_values(res, deploys)
-
-            for deploy in values.keys():
-                if deploy not in metrics.keys():
-                    metrics[deploy] = dict()
-                metrics[deploy][name] = values[deploy]
-        return metrics
-
-    def __get_values(data, deploys):
-        values = dict()
-        for item in data:
-            pod = item["metric"]["pod"]
-            deploy = Metrics.__find_deploy(pod, deploys)
-            value = float(item["value"][1])
-            values[deploy] = value
-        return values
-
-    def __find_deploy(pod, deploys):
-        for deploy in deploys:
-            if pod.startswith(deploy):
-                return deploy
-        return ""
-
     def __to_pod_label(deploys):
         pods = [f"{deploy}-.*" for deploy in deploys]
         return "|".join(pods)
 
+    def __format_query(query, ns, deploys):
+        pods = Metrics.__to_pod_label(deploys)
+        return query % f'namespace="{ns}", pod=~"{pods}"'
+
+    def __query_prom(self, query):
+        try:
+            res = self.__prom.custom_query(query)
+            return res
+        except Exception as e:
+            print("[Error][Collector] Cannot query Prometheus\n", e)
+        return {}
+
+    def __match_deploy(pod: str, deploys: list):
+        for deploy in deploys:
+            if pod.startswith(deploy):
+                return deploy
+        return None
+
+    def __agg_by_pod(res, deploys, label):
+        df = pd.DataFrame(res)
+
+        # set pod name of each row
+        df["pod"] = df["metric"].apply(lambda metric: metric["pod"])
+        # convert pod name to deploy name
+        df["deploy"] = df["pod"].apply(Metrics.__match_deploy, deploys=deploys)
+        # extract values (discard timestamp)
+        df[label] = df["value"].apply(lambda v: v[1])
+
+        df.drop(columns=["metric", "pod", "value"], inplace=True)
+        result = df.groupby("deploy").aggregate({label: "sum"}).reset_index()
+        result.set_index("deploy", inplace=True)
+        return result
+
+    def __query(self, ns):
+        ns_metrics = pd.DataFrame()
+        deploys = self.__targets[ns]
+
+        for q, label in self.__queries:
+            query = Metrics.__format_query(q, ns, deploys)
+            metrics = self.__query_prom(query)
+            if len(metrics) == 0:
+                continue
+
+            if label == "cpu":
+                metrics = Metrics.__agg_by_pod(metrics, deploys, "cpu")
+            else:
+                # TODO: aggregate by deploy/service
+                pass
+            ns_metrics[label] = metrics[label]
+        return ns_metrics
+
     def set_targets(self, targets) -> None:
         self.__targets = targets
 
-    def get_all(self) -> dict:
-        metrics = dict()
-        for ns in self.__targets.keys():
-            metrics[ns] = self.__query_prom(ns)
-        return metrics
-
     def set_prom(self, url):
         self.__prom = PrometheusConnect(url=url)
-        print(url)
+
+    def get_all(self) -> dict:
+        metrics = {}
+        for ns in self.__targets:
+            metrics[ns] = self.__query(ns)
+        return metrics
+
+    def to_dict(self):
+        metrics = self.get_all()
+        for ns in metrics:
+            metrics[ns] = metrics[ns].to_dict()
+        return metrics
