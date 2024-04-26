@@ -1,5 +1,5 @@
 from ..models.metrics import Metrics
-from flask import jsonify, current_app
+from flask import jsonify
 import requests
 import threading
 import time
@@ -38,9 +38,8 @@ class Collector:
                 metrics = self.__metrics.to_dict()
                 try:
                     requests.post("http://localhost:7770/detect", json=metrics)
-                except:
-                    # TODO: Error handling
-                    print(f"[Error][Collector] Cannot send metrics to detector.")
+                except Exception as e:
+                    print(f"[Error][Collector] Cannot send metrics to detector.\n\t", e)
                 elapsed_time = 0
             time.sleep(1)
             elapsed_time += 1

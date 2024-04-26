@@ -43,15 +43,15 @@ class Metrics:
         # convert pod name to deploy name
         df["deploy"] = df["pod"].apply(Metrics.__match_deploy, deploys=deploys)
         # extract values (discard timestamp)
-        df[label] = df["value"].apply(lambda v: v[1])
-
+        df[label] = pd.to_numeric(df["value"].apply(lambda v: v[1]))
         df.drop(columns=["metric", "pod", "value"], inplace=True)
+
         result = df.groupby("deploy").aggregate({label: "sum"}).reset_index()
         result.set_index("deploy", inplace=True)
         return result
 
     def __query(self, ns):
-        ns_metrics = pd.DataFrame()
+        deploy_metrics = pd.DataFrame()
         deploys = self.__targets[ns]
 
         for q, label in self.__queries:
@@ -65,8 +65,8 @@ class Metrics:
             else:
                 # TODO: aggregate by deploy/service
                 pass
-            ns_metrics[label] = metrics[label]
-        return ns_metrics
+            deploy_metrics[label] = metrics[label]
+        return deploy_metrics.fillna(0)
 
     def set_targets(self, targets) -> None:
         self.__targets = targets
@@ -74,14 +74,8 @@ class Metrics:
     def set_prom(self, url):
         self.__prom = PrometheusConnect(url=url)
 
-    def get_all(self) -> dict:
+    def to_dict(self) -> dict:
         metrics = {}
         for ns in self.__targets:
-            metrics[ns] = self.__query(ns)
-        return metrics
-
-    def to_dict(self):
-        metrics = self.get_all()
-        for ns in metrics:
-            metrics[ns] = metrics[ns].to_dict()
+            metrics[ns] = self.__query(ns).to_dict()
         return metrics
