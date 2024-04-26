@@ -46,7 +46,7 @@ class Metrics:
         df[label] = pd.to_numeric(df["value"].apply(lambda v: v[1]))
         df.drop(columns=["metric", "pod", "value"], inplace=True)
 
-        result = df.groupby("deploy").aggregate({label: "sum"}).reset_index()
+        result = df.groupby("deploy").aggregate({label: "mean"}).reset_index()
         result.set_index("deploy", inplace=True)
         return result
 

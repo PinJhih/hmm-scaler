@@ -2,3 +2,4 @@ flask
 requests
 hmmlearn
 pandas
+kubernetes
