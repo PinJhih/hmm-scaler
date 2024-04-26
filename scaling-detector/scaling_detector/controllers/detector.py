@@ -9,22 +9,25 @@ class Detector:
     __MODEL_PATH = __CURRENT_DIR + "/hmm.pkl"
 
     def __init__(self) -> None:
-        pass
         with open(Detector.__MODEL_PATH, "rb") as f:
             self.__model = pickle.load(f)
+        self.__states = States()
 
-    def detect(self, metric):
-        labels = ["cpu"]
-        scales = [1]
-        states = States(metric, labels, scales).get_all()
-
-        print(states)
-        for ns in states.keys():
-            for deploy in states[ns].keys():
-                s = states[ns][deploy]
-                self.__inference(f"{ns} {deploy}", s)
-
-    def __inference(self, label, state):
-        X = np.array(state).reshape([1, 1])
+    def __inference(self, seq):
+        X = np.array([seq]).reshape((1, len(seq)))
         y = self.__model.predict(X)
-        print(label, y)
+        return y[-1]
+
+    def detect(self, ns_metrics):
+        self.__states.add(ns_metrics)
+        sequences = self.__states.get()
+        
+        print(f"[detector] prediction")
+        for ns in sequences:
+            for deploy in sequences[ns]:
+                seq = sequences[ns][deploy]
+                h = self.__inference(seq)
+
+                # TODO: Scaling by k8s API
+                print(f"[detector] {ns}/{deploy}")
+                print(f"[detector] {seq} => {h}")

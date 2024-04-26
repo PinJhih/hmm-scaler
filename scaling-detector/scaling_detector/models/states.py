@@ -1,23 +1,50 @@
+import pandas as pd
+
+
 class States:
-    def __init__(self, metrics, labels, scales) -> None:
+    def __init__(self) -> None:
+        self.__prev_metrics = dict()
         self.__states = dict()
-        for ns in metrics.keys():
-            self.__states[ns] = States.__mapping(metrics[ns], labels, scales)
 
-    def get_all(self) -> dict:
-        return self.__states
+    def __encode(self, metrics: pd.DataFrame):
+        labels = ["cpu"]
+        offsets = [-0.4]
+        scales = [1]
+        step = 0.1
 
-    def __mapping(metrics, labels, scale):
-        states = dict()
-        for deploy in metrics.keys():
-            state = []
-            for i in range(len(labels)):
-                label = labels[i]
-                metric = metrics[deploy][label] / scale[i]
-                if metric == 0:
-                    s = 0
-                else:
-                    s = int(metric // 0.1) + 1
-                state.append(s)
-            states[deploy] = state
+        states = metrics.copy()
+        for i in range(len(labels)):
+            label = labels[i]
+            states[label] -= offsets[i]
+            states[label] /= scales[i]
+            states[label] //= step
+            states[label] = states[label].apply(int)
         return states
+
+    def __add(self, ns: str, metrics: pd.DataFrame):
+        diff = metrics.astype("float64") - self.__prev_metrics[ns].astype("float64")
+        diff.fillna(0, inplace=True)
+        self.__prev_metrics[ns] = metrics
+
+        states = self.__encode(diff)
+        if ns not in self.__states:
+            self.__states[ns] = dict()
+
+        for deploy in states.index:
+            if deploy not in self.__states[ns]:
+                self.__states[ns][deploy] = list()
+
+            s = states.loc[deploy, "cpu"]
+            self.__states[ns][deploy].append(s)
+
+    def add(self, ns_metrics):
+        for ns in ns_metrics:
+            deploy_metrics = pd.DataFrame(ns_metrics[ns])
+
+            if ns not in self.__prev_metrics:
+                self.__prev_metrics[ns] = deploy_metrics
+            else:
+                self.__add(ns, deploy_metrics)
+
+    def get(self):
+        return self.__states
