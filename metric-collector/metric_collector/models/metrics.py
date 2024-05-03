@@ -3,8 +3,12 @@ from prometheus_api_client import PrometheusConnect
 
 
 class Metrics:
-    def __init__(self, targets=None, prom_url="http://localhost:9090/") -> None:
-        self.set_targets(targets)
+    def __init__(
+        self,
+        targets: dict = {},
+        prom_url: str = "http://localhost:9090/",
+    ) -> None:
+        self.__targets = targets
         self.__queries = [
             [
                 "sum(irate(container_cpu_usage_seconds_total{%s}[1m])) by (pod)",
@@ -13,15 +17,15 @@ class Metrics:
         ]
         self.__prom = PrometheusConnect(url=prom_url)
 
-    def __to_pod_label(deploys):
+    def __to_pod_label(deploys: list) -> str:
         pods = [f"{deploy}-.*" for deploy in deploys]
         return "|".join(pods)
 
-    def __format_query(query, ns, deploys):
+    def __format_query(query: str, ns: str, deploys: list) -> str:
         pods = Metrics.__to_pod_label(deploys)
         return query % f'namespace="{ns}", pod=~"{pods}"'
 
-    def __query_prom(self, query):
+    def __query_prom(self, query: str) -> dict:
         try:
             res = self.__prom.custom_query(query)
             return res
@@ -29,13 +33,13 @@ class Metrics:
             print("[Error][Collector] Cannot query Prometheus\n", e)
         return {}
 
-    def __match_deploy(pod: str, deploys: list):
+    def __match_deploy(pod: str, deploys: list) -> str:
         for deploy in deploys:
             if pod.startswith(deploy):
                 return deploy
-        return None
+        return ""
 
-    def __agg_by_pod(res, deploys, label):
+    def __agg_by_pod(res: dict, deploys: list, label: str) -> pd.DataFrame:
         df = pd.DataFrame(res)
 
         # set pod name of each row
@@ -50,7 +54,7 @@ class Metrics:
         result.set_index("deploy", inplace=True)
         return result
 
-    def __query(self, ns):
+    def __query(self, ns: str) -> pd.DataFrame:
         deploy_metrics = pd.DataFrame()
         deploys = self.__targets[ns]
 
@@ -68,10 +72,10 @@ class Metrics:
             deploy_metrics[label] = metrics[label]
         return deploy_metrics.fillna(0)
 
-    def set_targets(self, targets) -> None:
+    def set_targets(self, targets: dict) -> None:
         self.__targets = targets
 
-    def set_prom(self, url):
+    def set_prom(self, url: str) -> None:
         self.__prom = PrometheusConnect(url=url)
 
     def to_dict(self) -> dict:

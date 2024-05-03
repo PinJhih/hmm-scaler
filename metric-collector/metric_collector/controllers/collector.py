@@ -1,18 +1,21 @@
-from ..models.metrics import Metrics
-from flask import jsonify
 import requests
 import threading
 import time
 
+from flask import jsonify, Flask
+
+from ..models.metrics import Metrics
+
 
 class Collector:
-    def __init__(self, app) -> None:
+    def __init__(self, app: Flask) -> None:
         try:
             # Set Flask app context
             self.__app = app
             # Set default values
             self.__interval = 30
             self.__metrics = Metrics({})
+
             # A thread fetches config. If it fails, it will retry up to 5 times.
             Collector.__create_thread(self.__fetch_config, [5]).start()
 
@@ -23,10 +26,9 @@ class Collector:
             self.__worker_thread.start()
         except Exception as e:
             # TODO: Error handling
-            print("[Error][Collector] Cannot create thread.")
-            print(e)
+            print(f"[Error][Collector] Cannot create thread.\n\t{e}")
 
-    def __fetch_metrics(self, interval):
+    def __fetch_metrics(self, interval: int):
         elapsed_time = 0
         print(f"[Info][Collector] Worker thread (interval={interval}) started.")
         while True:
@@ -35,16 +37,16 @@ class Collector:
                 print(f"[Info][Collector] Worker thread interval is set to {interval}")
 
             if elapsed_time >= self.__interval:
+                elapsed_time = 0
                 metrics = self.__metrics.to_dict()
                 try:
                     requests.post("http://localhost:7770/detect", json=metrics)
                 except Exception as e:
                     print(f"[Error][Collector] Cannot send metrics to detector.\n\t", e)
-                elapsed_time = 0
             time.sleep(1)
             elapsed_time += 1
 
-    def __fetch_config(self, retry_limit):
+    def __fetch_config(self, retry_limit: int):
         retry_count = 0
         with self.__app.app_context():
             while retry_count < retry_limit:
@@ -70,17 +72,17 @@ class Collector:
         thread.daemon = True
         return thread
 
-    def set_interval(self, t):
+    def set_interval(self, t: int):
         self.__interval = t
         msg = {"message": f"Interval is set to {t}"}
         return jsonify(msg), 200
 
-    def set_targets(self, targets):
+    def set_targets(self, targets: dict):
         self.__metrics.set_targets(targets)
         msg = {"message": f"targets are updated"}
         return jsonify(msg), 200
 
-    def set_prom(self, url):
+    def set_prom(self, url: str):
         self.__metrics.set_prom(url)
         msg = {"message": f"Prom url is set to {url}"}
         return jsonify(msg), 200

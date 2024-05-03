@@ -37,7 +37,7 @@ class States:
             s = states.loc[deploy, "cpu"]
             self.__states[ns][deploy].append(s)
 
-    def add(self, ns_metrics):
+    def add(self, ns_metrics: dict):
         for ns in ns_metrics:
             deploy_metrics = pd.DataFrame(ns_metrics[ns])
 

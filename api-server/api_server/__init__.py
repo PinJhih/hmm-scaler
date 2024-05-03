@@ -1,4 +1,5 @@
 from flask import Flask, request
+
 from .controllers import config_mgr
 
 app = Flask(__name__)

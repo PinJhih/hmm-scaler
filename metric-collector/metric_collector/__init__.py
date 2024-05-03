@@ -1,4 +1,5 @@
 from flask import Flask, request
+
 from .controllers.collector import Collector
 
 app = Flask(__name__)

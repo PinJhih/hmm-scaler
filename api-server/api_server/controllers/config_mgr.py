@@ -1,12 +1,14 @@
-from ..models.configuration import Configuration
-from flask import jsonify
 import requests
+
+from flask import jsonify
+
+from ..models.configuration import Configuration
 
 __COLLECTOR_URL = "http://127.0.0.1:7700"
 configuration = Configuration()
 
 
-def __send_to_collector(path: str, json=None):
+def __send_to_collector(path: str, json: dict | None = None) -> requests.Response:
     url = __COLLECTOR_URL + path
     try:
         if json == None:
@@ -36,7 +38,7 @@ def get_interval():
     return jsonify(interval), 200
 
 
-def set_interval(t):
+def set_interval(t: int):
     configuration.set_interval(t)
 
     # Send interval to collector
@@ -52,7 +54,7 @@ def get_targets():
     return jsonify(targets), 200
 
 
-def add_target(ns, name):
+def add_target(ns: str, name: str):
     configuration.add_target(ns, name)
 
     # Send targets to collector
@@ -63,7 +65,7 @@ def add_target(ns, name):
     return jsonify(msg), 200
 
 
-def delete_target(ns, name):
+def delete_target(ns: str, name: str):
     configuration.delete_target(ns, name)
 
     # Send targets to collector

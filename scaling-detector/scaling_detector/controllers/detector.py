@@ -1,9 +1,11 @@
-from ..models.states import States
-from kubernetes import client, config
-from pathlib import Path
-import numpy as np
 import threading
 import pickle
+from pathlib import Path
+
+import numpy as np
+from kubernetes import client, config
+
+from ..models.states import States
 
 
 class Detector:
@@ -18,12 +20,12 @@ class Detector:
         config.load_kube_config()
         self.__k8s = client.AppsV1Api()
 
-    def __inference(self, seq):
+    def __inference(self, seq: list):
         X = np.array([seq]).reshape((1, len(seq)))
         y = self.__model.predict(X)
         return y[-1]
 
-    def __get_replicas(self, ns, deploy):
+    def __get_replicas(self, ns: str, deploy: str) -> int | None:
         try:
             deployment = self.__k8s.read_namespaced_deployment(deploy, ns)
             return deployment.spec.replicas
@@ -31,7 +33,7 @@ class Detector:
             print(f"[Error][Scaler] getting deployment replicas: {e}")
             return None
 
-    def __scale(self, ns, deploy, replicas):
+    def __scale(self, ns: str, deploy: str, replicas: int) -> None:
         try:
             deployment = self.__k8s.read_namespaced_deployment(deploy, ns)
             deployment.spec.replicas = replicas
@@ -42,7 +44,7 @@ class Detector:
             print(f"[Error][Scaler] setting deployment replicas: {e}")
             return False
 
-    def detect(self, ns_metrics):
+    def detect(self, ns_metrics: dict):
         self.__states.add(ns_metrics)
         sequences = self.__states.get()
 
@@ -50,6 +52,7 @@ class Detector:
             for ns in sequences:
                 for deploy in sequences[ns]:
                     seq = sequences[ns][deploy]
+                    print(type(seq))
                     h = self.__inference(seq)
 
                     if h == 1:
@@ -63,6 +66,6 @@ class Detector:
                         print("\b", seq, h)
                         if r != 0:
                             self.__scale(ns, deploy, r)
-        
+
         detection_thread = threading.Thread(target=detection_logic)
         detection_thread.start()
