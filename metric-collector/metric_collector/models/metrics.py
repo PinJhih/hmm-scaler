@@ -14,16 +14,17 @@ class Metrics:
                 "sum(irate(container_cpu_usage_seconds_total{%s}[1m])) by (pod)",
                 "cpu",
             ],
+            [
+                "sum(irate(tcp_read_bytes_total{%s}[1m])) by (deployment)",
+                "tcp_read",
+            ],
         ]
         self.__prom = PrometheusConnect(url=prom_url)
 
-    def __to_pod_label(deploys: list) -> str:
-        pods = [f"{deploy}-.*" for deploy in deploys]
-        return "|".join(pods)
-
     def __format_query(query: str, ns: str, deploys: list) -> str:
-        pods = Metrics.__to_pod_label(deploys)
-        return query % f'namespace="{ns}", pod=~"{pods}"'
+        pods = [f"{deploy}-.*" for deploy in deploys]
+        label = "|".join(pods)
+        return query % f'namespace="{ns}", pod=~"{label}"'
 
     def __query_prom(self, query: str) -> dict:
         try:
@@ -54,6 +55,17 @@ class Metrics:
         result.set_index("deploy", inplace=True)
         return result
 
+    def __agg_by_deploy(res: dict, label: str) -> pd.DataFrame:
+        df = pd.DataFrame(res)
+
+        # set deploy of row
+        df["deploy"] = df["metric"].apply(lambda metric: metric["deployment"])
+        # extract values (discard timestamp)
+        df[label] = pd.to_numeric(df["value"].apply(lambda v: v[1]))
+        df.drop(columns=["metric", "value"], inplace=True)
+        df.set_index("deploy", inplace=True)
+        return df
+
     def __query(self, ns: str) -> pd.DataFrame:
         deploy_metrics = pd.DataFrame()
         deploys = self.__targets[ns]
@@ -65,10 +77,9 @@ class Metrics:
                 continue
 
             if label == "cpu":
-                metrics = Metrics.__agg_by_pod(metrics, deploys, "cpu")
+                metrics = Metrics.__agg_by_pod(metrics, deploys, label)
             else:
-                # TODO: aggregate by deploy/service
-                pass
+                metrics = Metrics.__agg_by_deploy(metrics, label)
             deploy_metrics[label] = metrics[label]
         return deploy_metrics.fillna(0)
 

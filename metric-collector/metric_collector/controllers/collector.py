@@ -23,7 +23,6 @@ class Collector:
             self.__worker_thread = Collector.__create_thread(
                 self.__fetch_metrics, [self.__interval]
             )
-            self.__worker_thread.start()
         except Exception as e:
             # TODO: Error handling
             print(f"[Error][Collector] Cannot create thread.\n\t{e}")
@@ -56,6 +55,7 @@ class Collector:
                     self.set_interval(config["interval"])
                     self.set_targets(config["targets"])
                     self.set_prom(config["prom"])
+                    self.__worker_thread.start()
                     break
                 except:
                     print(
