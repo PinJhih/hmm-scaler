@@ -32,7 +32,7 @@ class Metrics:
             return res
         except Exception as e:
             print("[Error][Collector] Cannot query Prometheus\n", e)
-        return {}
+        return None
 
     def __match_deploy(pod: str, deploys: list) -> str:
         for deploy in deploys:
@@ -66,22 +66,22 @@ class Metrics:
         df.set_index("deploy", inplace=True)
         return df
 
-    def __query(self, ns: str) -> pd.DataFrame:
-        deploy_metrics = pd.DataFrame()
+    def __get_ns_metrics(self, ns: str) -> pd.DataFrame:
+        ns_metrics = pd.DataFrame()
         deploys = self.__targets[ns]
 
         for q, label in self.__queries:
             query = Metrics.__format_query(q, ns, deploys)
             metrics = self.__query_prom(query)
-            if len(metrics) == 0:
+            if metrics is None:
                 continue
 
             if label == "cpu":
                 metrics = Metrics.__agg_by_pod(metrics, deploys, label)
             else:
                 metrics = Metrics.__agg_by_deploy(metrics, label)
-            deploy_metrics[label] = metrics[label]
-        return deploy_metrics.fillna(0)
+            ns_metrics[label] = metrics[label]
+        return ns_metrics.fillna(0)
 
     def set_targets(self, targets: dict) -> None:
         self.__targets = targets
@@ -90,7 +90,13 @@ class Metrics:
         self.__prom = PrometheusConnect(url=url)
 
     def to_dict(self) -> dict:
-        metrics = {}
+        metrics = []
         for ns in self.__targets:
-            metrics[ns] = self.__query(ns).to_dict()
-        return metrics
+            ns_metrics = self.__get_ns_metrics(ns).reset_index()
+            ns_metrics.insert(0, "ns", ns)
+            metrics.append(ns_metrics)
+        metrics = pd.concat(metrics)
+
+        print(metrics)
+
+        return metrics.to_dict()
