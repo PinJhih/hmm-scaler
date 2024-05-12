@@ -97,5 +97,5 @@ class Metrics:
             metrics.append(ns_metrics)
         metrics = pd.concat(metrics)
         metrics.set_index(["ns", "deploy"], inplace=True)
-        print(metrics.to_json())
+        metrics.index = metrics.index.map(str)
         return metrics.to_dict()
