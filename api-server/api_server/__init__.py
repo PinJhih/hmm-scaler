@@ -1,13 +1,19 @@
-from flask import Flask, request
+from flask import Flask, request, send_file
+
+from pathlib import Path
 
 from .controllers import config_mgr
+
+
+CURRENT_DIR = str(Path(__file__).parent.resolve())
+STATIC_PATH = f"{CURRENT_DIR}/static"
 
 app = Flask(__name__)
 
 
 @app.route("/", methods=["GET"])
 def index():
-    return "<h1>HMM-Scaler: API Server</h1>", 200
+    return send_file(STATIC_PATH + '/index.html')
 
 
 @app.route("/config", methods=["GET"])
