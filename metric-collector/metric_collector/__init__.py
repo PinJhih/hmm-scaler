@@ -26,3 +26,8 @@ def set_targets():
 def set_prom():
     url = request.get_json()["url"]
     return collector.set_prom(url)
+
+
+@app.route("/latency/<ns>/<deploy>", methods=["GET"])
+def get_latency(ns, deploy):
+    return collector.get_latency(ns, deploy)

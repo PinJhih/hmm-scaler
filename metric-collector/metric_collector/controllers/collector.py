@@ -86,3 +86,8 @@ class Collector:
         self.__metrics.set_prom(url)
         msg = {"message": f"Prom url is set to {url}"}
         return jsonify(msg), 200
+
+    def get_latency(self, ns: str, deploy: str) -> dict:
+        latency = self.__metrics.get_latency(ns, deploy)
+        msg = {"avg": latency}
+        return jsonify(msg), 200

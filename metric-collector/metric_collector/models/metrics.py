@@ -99,3 +99,11 @@ class Metrics:
         metrics.set_index(["ns", "deploy"], inplace=True)
         metrics.index = metrics.index.map(str)
         return metrics.to_dict()
+
+    def get_latency(self, ns: str, deploy: str) -> pd.DataFrame:
+        query = f"""
+            sum(irate(response_latency_ms_sum{{namespace="{ns}", deployment="{deploy}"}} [1m])) by (deployment) /
+            sum(irate(response_total{{namespace="{ns}", deployment="{deploy}"}} [1m])) by (deployment)
+            """
+        res = self.__query_prom(query)[0]
+        return res["value"][1]
