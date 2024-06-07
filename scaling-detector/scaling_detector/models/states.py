@@ -1,50 +1,44 @@
 import pandas as pd
+import numpy as np
 
 
 class States:
     def __init__(self) -> None:
-        self.__prev_metrics = dict()
+        self.__prev_metrics = pd.DataFrame()
         self.__states = dict()
 
-    def __encode(self, metrics: pd.DataFrame):
-        labels = ["cpu"]
-        offsets = [-0.4]
-        scales = [1]
-        step = 0.1
+    def __get_states(self, metrics: pd.DataFrame):
+        metrics_diff = metrics.sub(self.__prev_metrics)
+        idx = self.__prev_metrics.index
 
-        states = metrics.copy()
-        for i in range(len(labels)):
-            label = labels[i]
-            states[label] -= offsets[i]
-            states[label] /= scales[i]
-            states[label] //= step
-            states[label] = states[label].apply(int)
+        states = metrics_diff.loc[idx]
+        offsets = {"cpu": -0.0627078714735736}
+        for col, offset in offsets.items():
+            states[col] -= offset
+
+        scales = {"cpu": 0.13807582371262683}
+        for col, scale in scales.items():
+            states[col] /= scale
+            states[col] //= 0.1
         return states
 
-    def __add(self, ns: str, metrics: pd.DataFrame):
-        diff = metrics.astype("float64") - self.__prev_metrics[ns].astype("float64")
-        diff.fillna(0, inplace=True)
-        self.__prev_metrics[ns] = metrics
+    def add(self, metrics: pd.DataFrame):
+        if len(self.__prev_metrics) == 0:
+            self.__prev_metrics = metrics
+            return
 
-        states = self.__encode(diff)
-        if ns not in self.__states:
-            self.__states[ns] = dict()
+        states = self.__get_states(metrics)
+        self.__prev_metrics = metrics
+        for index in states.index:
+            if index not in self.__states.keys():
+                self.__states[index] = list()
+            value = states.loc[index]["cpu"]
 
-        for deploy in states.index:
-            if deploy not in self.__states[ns]:
-                self.__states[ns][deploy] = list()
-
-            s = states.loc[deploy, "cpu"]
-            self.__states[ns][deploy].append(s)
-
-    def add(self, ns_metrics: dict):
-        for ns in ns_metrics:
-            deploy_metrics = pd.DataFrame(ns_metrics[ns])
-
-            if ns not in self.__prev_metrics:
-                self.__prev_metrics[ns] = deploy_metrics
-            else:
-                self.__add(ns, deploy_metrics)
+            try:
+                value = int(value)
+            except:
+                value = self.__states[index][-1]
+            self.__states[index].append(value)
 
     def get(self):
         return self.__states

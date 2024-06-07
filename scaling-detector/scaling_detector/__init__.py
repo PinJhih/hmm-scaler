@@ -1,4 +1,6 @@
+import pandas as pd
 from flask import Flask, jsonify, request
+
 
 from .controllers.detector import Detector
 
@@ -13,7 +15,15 @@ def index():
 
 @app.route("/detect", methods=["POST"])
 def detect():
-    metrics = request.json
-    detector.detect(metrics)
+    try:
+        body = request.json
+        metrics = pd.DataFrame(body["metrics"])
+        metrics.index = metrics.index.map(eval)
+        response_time = body["response_time"]
+    except:
+        msg = {"message": "Format error!"}
+        return jsonify(msg), 400
+
+    detector.detect(metrics, response_time)
     msg = {"message": "OK!"}
     return jsonify(msg), 200

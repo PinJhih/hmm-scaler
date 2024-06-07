@@ -38,8 +38,14 @@ class Collector:
             if elapsed_time >= self.__interval:
                 elapsed_time = 0
                 metrics = self.__metrics.to_dict()
+                response_time = self.__metrics.get_latency(
+                    "social-network", "nginx-thrift"
+                )
                 try:
-                    requests.post("http://localhost:7770/detect", json=metrics)
+                    requests.post(
+                        "http://localhost:7770/detect",
+                        json={"metrics": metrics, "response_time": response_time},
+                    )
                 except Exception as e:
                     print(f"[Error][Collector] Cannot send metrics to detector.\n\t", e)
             time.sleep(1)

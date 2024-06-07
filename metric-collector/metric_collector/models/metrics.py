@@ -11,7 +11,7 @@ class Metrics:
         self.__targets = targets
         self.__queries = [
             [
-                "sum(irate(container_cpu_usage_seconds_total{%s}[1m])) by (pod)",
+                "sum(irate(container_cpu_usage_seconds_total{%s}[1m])) by (pod) / 80",
                 "cpu",
             ],
             [
@@ -105,5 +105,8 @@ class Metrics:
             sum(irate(response_latency_ms_sum{{namespace="{ns}", deployment="{deploy}"}} [1m])) by (deployment) /
             sum(irate(response_total{{namespace="{ns}", deployment="{deploy}"}} [1m])) by (deployment)
             """
-        res = self.__query_prom(query)[0]
-        return res["value"][1]
+
+        res = self.__query_prom(query)
+        if len(res) == 0:
+            return 5 # TODO: missing value handling
+        return res[0]["value"][1]
