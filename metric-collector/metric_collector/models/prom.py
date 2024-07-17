@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from prometheus_api_client import PrometheusConnect
 
 
@@ -32,9 +33,10 @@ class Prometheus:
         df.drop(columns=["metric", "pod"], inplace=True)
 
         # get average of each deploy
-        result = df.groupby("deploy").aggregate({"value": "mean"}).reset_index()
-        result.set_index("deploy", inplace=True)
-        return result
+        df = df.groupby("deploy").aggregate({"value": "mean"}).reset_index()
+        df.set_index("deploy", inplace=True)
+        df.index.name = None
+        return df
 
     def __agg_by_deploy(res: dict) -> pd.DataFrame:
         df = pd.DataFrame(res)
@@ -46,19 +48,22 @@ class Prometheus:
         df["value"] = pd.to_numeric(df["value"].apply(lambda v: v[1]))
         df.drop(columns=["metric"], inplace=True)
         df.set_index("deploy", inplace=True)
+        df.index.name = None
         return df
 
-    def query_by_pod(self, query: str, ns: str, deploys: list):
+    def query_by_pod(self, query: str, ns: str, deploys: list) -> pd.DataFrame:
         pods = [f"{deploy}-.*" for deploy in deploys]
         label = "|".join(pods)
         query = query % f'namespace="{ns}", pod=~"{label}"'
 
         res = self.__query(query)
-        return Prometheus.__agg_by_pod(res, deploys)
+        metrics = Prometheus.__agg_by_pod(res, deploys)
+        return metrics.T
 
-    def query_by_deploy(self, query: str, ns: str, deploy: list):
+    def query_by_deploy(self, query: str, ns: str, deploy: list) -> pd.DataFrame:
         label = "|".join(deploy)
         query = query % f'namespace="{ns}", deployment=~"{label}"'
 
         res = self.__query(query)
-        return Prometheus.__agg_by_deploy(res)
+        metrics = Prometheus.__agg_by_deploy(res)
+        return metrics.T
