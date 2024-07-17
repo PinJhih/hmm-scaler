@@ -4,8 +4,6 @@ import time
 
 from flask import jsonify, Flask
 
-from ..models.metrics import Metrics
-
 
 class Collector:
     def __init__(self, app: Flask) -> None:
@@ -14,7 +12,6 @@ class Collector:
             self.__app = app
             # Set default values
             self.__interval = 30
-            self.__metrics = Metrics({})
 
             # A thread fetches config. If it fails, it will retry up to 5 times.
             Collector.__create_thread(self.__fetch_config, [5]).start()
@@ -36,12 +33,8 @@ class Collector:
                 print(f"[Info][Collector] Worker thread interval is set to {interval}")
 
             if elapsed_time >= self.__interval:
-                elapsed_time = 0
-                metrics = self.__metrics.to_dict()
-                try:
-                    requests.post("http://localhost:7770/detect", json=metrics)
-                except Exception as e:
-                    print(f"[Error][Collector] Cannot send metrics to detector.\n\t", e)
+                # TODO: get metrics and send it to detector
+                pass
             time.sleep(1)
             elapsed_time += 1
 
@@ -78,16 +71,17 @@ class Collector:
         return jsonify(msg), 200
 
     def set_targets(self, targets: dict):
-        self.__metrics.set_targets(targets)
+        # TODO: save targets
         msg = {"message": f"targets are updated"}
         return jsonify(msg), 200
 
     def set_prom(self, url: str):
-        self.__metrics.set_prom(url)
+        # TODO: save prom url
         msg = {"message": f"Prom url is set to {url}"}
         return jsonify(msg), 200
 
     def get_latency(self, ns: str, deploy: str) -> dict:
-        latency = self.__metrics.get_latency(ns, deploy)
+        # TODO: get latency of the APP
+        latency = 10
         msg = {"avg": latency}
         return jsonify(msg), 200
