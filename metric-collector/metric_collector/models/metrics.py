@@ -21,11 +21,12 @@ class NamespaceMetrics:
     def insert(self, metrics_name: str, metrics: pd.DataFrame) -> None:
         m = self.__metrics[metrics_name]
         if len(m) == 0:
+            # ensure metrics contains all deploys
             for deploy in m.columns:
                 if deploy not in metrics.columns:
-                    # TODO: missing value handling
-                    metrics[deploy] = np.nan
-        m = pd.concat([m, metrics])
+                    metrics[deploy] = 0
 
+        m = pd.concat([m, metrics])
         m.reset_index(inplace=True, drop=True)
+        m.interpolate(method="linear", inplace=True)
         self.__metrics[metrics_name] = m
