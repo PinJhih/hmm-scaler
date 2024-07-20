@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 from prometheus_api_client import PrometheusConnect
 
 
