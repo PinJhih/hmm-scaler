@@ -30,3 +30,13 @@ class NamespaceMetrics:
         m.reset_index(inplace=True, drop=True)
         m.interpolate(method="linear", inplace=True)
         self.__metrics[metrics_name] = m
+
+
+class Metrics:
+    def __init__(self, targets: dict, metrics_names: list) -> None:
+        self.__metrics = dict()
+        for ns, deploys in targets.items():
+            self.__metrics[ns] = NamespaceMetrics(deploys, metrics_names)
+
+    def insert(self, ns: str, metrics_name: str, metrics: pd.DataFrame):
+        self.__metrics[ns].insert(metrics_name, metrics)
