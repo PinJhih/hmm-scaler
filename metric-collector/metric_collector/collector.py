@@ -4,6 +4,9 @@ import time
 
 from flask import Flask
 
+from .models.metrics import Metrics
+from .models.prom import Prometheus
+
 
 class Collector:
     def __init__(self, app: Flask) -> None:
@@ -12,6 +15,12 @@ class Collector:
             self.__app = app
             # Set default values
             self.__interval = 60
+            self.__queries = {
+                "cpu": [
+                    "sum(irate(container_cpu_usage_seconds_total{%s}[1m])) by (pod) / 16",
+                    "pod",
+                ]
+            }
 
             # A thread fetches config. If it fails, it will retry up to 5 times.
             Collector.__create_thread(self.__fetch_config, [5]).start()
@@ -45,9 +54,16 @@ class Collector:
                 try:
                     res = requests.get("http://localhost:7000/config")
                     config = res.json()
+
+                    # save configurations
                     self.set_interval(config["interval"])
                     self.set_targets(config["targets"])
                     self.set_prom(config["prom"])
+
+                    # init metrics
+                    metrics_names = list(self.__queries.keys())
+                    self.__metrics = Metrics(self.__targets, metrics_names)
+
                     self.__worker_thread.start()
                     break
                 except:
@@ -69,9 +85,7 @@ class Collector:
         self.__interval = t
 
     def set_targets(self, targets: dict):
-        # TODO: save targets
-        pass
+        self.__targets = targets
 
     def set_prom(self, url: str):
-        # TODO: save prom url
-        pass
+        self.__prom = Prometheus(url)

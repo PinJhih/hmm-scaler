@@ -27,6 +27,8 @@ class NamespaceMetrics:
         for deploy in self.__deploys:
             m = []
             for _, metrics in self.__metrics.items():
+                if len(metrics) == 0:
+                    continue
                 m.append(metrics.iloc[-1][deploy])
             current_metrics[deploy] = tuple(m)
         return current_metrics
