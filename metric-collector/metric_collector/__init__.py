@@ -1,6 +1,6 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 
-from .controllers.collector import Collector
+from .collector import Collector
 
 app = Flask(__name__)
 collector = Collector(app)
@@ -13,21 +13,23 @@ def index():
 
 @app.route("/interval/<int:t>", methods=["PUT"])
 def set_interval(t):
-    return collector.set_interval(t)
+    collector.set_interval(t)
+    msg = {"message": f"Interval is set to {t}"}
+    return jsonify(msg), 200
 
 
 @app.route("/targets", methods=["PUT"])
 def set_targets():
     targets = request.get_json()
-    return collector.set_targets(targets)
+    collector.set_targets(targets)
+    msg = {"message": f"targets are updated"}
+    return jsonify(msg), 200
 
 
 @app.route("/prom", methods=["PUT"])
 def set_prom():
     url = request.get_json()["url"]
-    return collector.set_prom(url)
+    collector.set_prom(url)
 
-
-@app.route("/latency/<ns>/<deploy>", methods=["GET"])
-def get_latency(ns, deploy):
-    return collector.get_latency(ns, deploy)
+    msg = {"message": f"Prom url is set to {url}"}
+    return jsonify(msg), 200

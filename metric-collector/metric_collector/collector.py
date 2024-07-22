@@ -2,7 +2,7 @@ import requests
 import threading
 import time
 
-from flask import jsonify, Flask
+from flask import Flask
 
 
 class Collector:
@@ -11,7 +11,7 @@ class Collector:
             # Set Flask app context
             self.__app = app
             # Set default values
-            self.__interval = 30
+            self.__interval = 60
 
             # A thread fetches config. If it fails, it will retry up to 5 times.
             Collector.__create_thread(self.__fetch_config, [5]).start()
@@ -67,21 +67,11 @@ class Collector:
 
     def set_interval(self, t: int):
         self.__interval = t
-        msg = {"message": f"Interval is set to {t}"}
-        return jsonify(msg), 200
 
     def set_targets(self, targets: dict):
         # TODO: save targets
-        msg = {"message": f"targets are updated"}
-        return jsonify(msg), 200
+        pass
 
     def set_prom(self, url: str):
         # TODO: save prom url
-        msg = {"message": f"Prom url is set to {url}"}
-        return jsonify(msg), 200
-
-    def get_latency(self, ns: str, deploy: str) -> dict:
-        # TODO: get latency of the APP
-        latency = 10
-        msg = {"avg": latency}
-        return jsonify(msg), 200
+        pass
