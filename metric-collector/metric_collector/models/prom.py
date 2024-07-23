@@ -56,7 +56,12 @@ class Prometheus:
         query = query % f'namespace="{ns}", pod=~"{label}"'
 
         res = self.__query(query)
-        metrics = Prometheus.__agg_by_pod(res, deploys)
+        try:
+            metrics = Prometheus.__agg_by_pod(res, deploys)
+        except:
+            # TODO: Exception handling
+            print(f"[Error] Cannot convert metrics to DF \n{res}")
+            metrics = pd.DataFrame()
         return metrics.T
 
     def query_by_deploy(self, query: str, ns: str, deploy: list) -> pd.DataFrame:
@@ -64,5 +69,10 @@ class Prometheus:
         query = query % f'namespace="{ns}", deployment=~"{label}"'
 
         res = self.__query(query)
-        metrics = Prometheus.__agg_by_deploy(res)
+        try:
+            metrics = Prometheus.__agg_by_deploy(res)
+        except:
+            # TODO: Exception handling
+            print(f"[Error] Cannot convert metrics to DF \n{res}")
+            metrics = pd.DataFrame()
         return metrics.T

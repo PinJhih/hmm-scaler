@@ -30,7 +30,7 @@ class NamespaceMetrics:
                 if len(metrics) == 0:
                     continue
                 m.append(metrics.iloc[-1][deploy])
-            current_metrics[deploy] = tuple(m)
+            current_metrics[deploy] = m
         return current_metrics
 
 
