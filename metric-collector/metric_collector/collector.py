@@ -27,13 +27,23 @@ class Collector:
 
             # A thread fetches metrics within a interval
             self.__worker_thread = Collector.__create_thread(
-                self.__fetch_metrics, [self.__interval]
+                self.__detect, [self.__interval]
             )
         except Exception as e:
             # TODO: Error handling
             print(f"[Error][Collector] Cannot create thread.\n\t{e}")
 
-    def __fetch_metrics(self, interval: int):
+    def __fetch_metrics(self):
+        for ns, deploys in self.__targets.items():
+            for name, q in self.__queries.items():
+                query, type = q
+                if type == "pod":
+                    m = self.__prom.query_by_pod(query, ns, deploys)
+                else:
+                    m = self.__prom.query_by_deploy(query, ns, deploys)
+                self.__metrics.insert(ns, name, m)
+
+    def __detect(self, interval: int):
         elapsed_time = 0
         print(f"[Info][Collector] Worker thread (interval={interval}) started.")
         while True:
@@ -42,8 +52,10 @@ class Collector:
                 print(f"[Info][Collector] Worker thread interval is set to {interval}")
 
             if elapsed_time >= self.__interval:
-                # TODO: get metrics and send it to detector
-                pass
+                self.__fetch_metrics()
+                metrics = self.__metrics.to_dict()
+
+                requests.post("http://localhost:7770/detect", json=metrics)
             time.sleep(1)
             elapsed_time += 1
 
