@@ -52,6 +52,7 @@ class Collector:
                 print(f"[Info][Collector] Worker thread interval is set to {interval}")
 
             if elapsed_time >= self.__interval:
+                elapsed_time = 0
                 self.__fetch_metrics()
                 metrics = self.__metrics.to_dict()
 
