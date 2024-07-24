@@ -1,8 +1,15 @@
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [Collector][%(module)s][%(levelname)s] - %(message)s",
-)
+logger = logging.getLogger("collector-logger")
+logger.setLevel(logging.DEBUG)
 
-logger = logging.getLogger(__name__)
+# create console handler
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+
+# set formatter
+formatter = logging.Formatter(
+    "%(asctime)s [Collector][%(module)s][%(levelname)s] - %(message)s"
+)
+ch.setFormatter(formatter)
+logger.addHandler(ch)
