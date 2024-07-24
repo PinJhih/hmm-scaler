@@ -1,6 +1,8 @@
 import pandas as pd
 from prometheus_api_client import PrometheusConnect
 
+from ..utils.logger import logger
+
 
 class Prometheus:
     def __init__(self, url: str) -> None:
@@ -11,7 +13,7 @@ class Prometheus:
             res = self.__conn.custom_query(query)
             return res
         except Exception as e:
-            print(f'[Error][Collector] Error executing query:\n  "{query}"\n{e}')
+            logger.error(f'Cannot execute query: "{query}"\n  {e}')
         return None
 
     def __match_deploy(pod: str, deploys: list) -> str:
@@ -60,7 +62,7 @@ class Prometheus:
             metrics = Prometheus.__agg_by_pod(res, deploys)
         except:
             # TODO: Exception handling
-            print(f"[Error] Cannot convert metrics to DF \n{res}")
+            logger.error(f'Cannot convert "{res}" to DF.\n\tquery: {query}')
             metrics = pd.DataFrame()
         return metrics.T
 
@@ -73,6 +75,6 @@ class Prometheus:
             metrics = Prometheus.__agg_by_deploy(res)
         except:
             # TODO: Exception handling
-            print(f"[Error] Cannot convert metrics to DF \n{res}")
+            logger.error(f'Cannot convert "{res}" to DF.\n\tquery: {query}')
             metrics = pd.DataFrame()
         return metrics.T

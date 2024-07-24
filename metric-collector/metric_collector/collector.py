@@ -5,7 +5,8 @@ import time
 from flask import Flask
 
 from .models.metrics import Metrics
-from .models.prom import Prometheus
+from .utils.prom import Prometheus
+from .utils.logger import logger
 
 
 class Collector:
@@ -34,7 +35,7 @@ class Collector:
             )
         except Exception as e:
             # TODO: Error handling
-            print(f"[Error][Collector] Cannot create thread.\n\t{e}")
+            logger.error(f"Cannot create thread.\n\t{e}")
 
     def __fetch_metrics(self):
         for ns, deploys in self.__targets.items():
@@ -66,11 +67,11 @@ class Collector:
 
     def __detect(self, interval: int):
         elapsed_time = 0
-        print(f"[Info][Collector] Worker thread (interval={interval}) started.")
+        logger.info(f"Worker thread (interval={interval}) started")
         while True:
             if interval != self.__interval:
                 interval = self.__interval
-                print(f"[Info][Collector] Worker thread interval is set to {interval}")
+                logger.info(f"Worker thread interval is set to {interval}")
 
             if elapsed_time >= self.__interval:
                 elapsed_time = 0
@@ -103,14 +104,12 @@ class Collector:
                     self.__worker_thread.start()
                     break
                 except:
-                    print(
-                        "[Error][Collector] Cannot get config from api-server, retry in 5 sec..."
-                    )
+                    logger.warn("Cannot get config from api-server, retry in 5 sec...")
                 time.sleep(5)
                 retry_count += 1
 
         if retry_count == retry_limit:
-            print("[Error][Collector] Retry count exceed retry limit!")
+            logger.error("Retry count exceed retry limit!")
 
     def __create_thread(target, args=()):
         thread = threading.Thread(target=target, args=args)
