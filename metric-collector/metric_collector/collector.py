@@ -22,6 +22,9 @@ class Collector:
                 ]
             }
 
+            # TODO: Make SLO configurable
+            self.__slo = {"socialnetwork": "nginx-thrift"}
+
             # A thread fetches config. If it fails, it will retry up to 5 times.
             Collector.__create_thread(self.__fetch_config, [5]).start()
 
@@ -43,6 +46,24 @@ class Collector:
                     m = self.__prom.query_by_deploy(query, ns, deploys)
                 self.__metrics.insert(ns, name, m)
 
+    def __fetch_slo(self):
+        query_latency = "sum(irate(response_latency_ms_sum{%s} [1m])) by (deployment)"
+        query_res_count = "sum(irate(response_total{%s} [1m])) by (deployment)"
+
+        slo = {}
+        for ns, deploy in self.__slo.items():
+            try:
+                total_latency = self.__prom.query_by_deploy(query_latency, ns, [deploy])
+                total_response = self.__prom.query_by_deploy(
+                    query_res_count, ns, [deploy]
+                )
+                avg_latency = (total_latency / total_response).values.flatten()[0]
+            except:
+                # TODO: missing value handling
+                avg_latency = 5
+            slo[ns] = avg_latency
+        return slo
+
     def __detect(self, interval: int):
         elapsed_time = 0
         print(f"[Info][Collector] Worker thread (interval={interval}) started.")
@@ -55,8 +76,10 @@ class Collector:
                 elapsed_time = 0
                 self.__fetch_metrics()
                 metrics = self.__metrics.to_dict()
+                slo = self.__fetch_slo()
 
-                requests.post("http://localhost:7770/detect", json=metrics)
+                data = {"metrics": metrics, "slo": slo}
+                requests.post("http://localhost:7770/detect", json=data)
             time.sleep(1)
             elapsed_time += 1
 
