@@ -5,9 +5,11 @@ import numpy as np
 class NamespaceMetrics:
     def __init__(self, deploys: list, metrics_names: list) -> None:
         self.__deploys = deploys
-        self.__metrics = {}
+        self.__metrics = dict()
         for name in metrics_names:
             self.__metrics[name] = pd.DataFrame(columns=deploys, dtype=np.float32)
+
+        self.__slo = pd.DataFrame(columns=["slo"], dtype=np.float32)
 
     def insert(self, metrics_name: str, metrics: pd.DataFrame) -> None:
         m = self.__metrics[metrics_name]
@@ -15,12 +17,24 @@ class NamespaceMetrics:
             # ensure metrics contains all deploys
             for deploy in m.columns:
                 if deploy not in metrics.columns:
+                    # TODO: missing value handling
                     metrics[deploy] = 0
 
         m = pd.concat([m, metrics])
         m.reset_index(inplace=True, drop=True)
         m.interpolate(method="linear", inplace=True)
         self.__metrics[metrics_name] = m
+
+    def insert_slo(self, latency: float):
+        slo = self.__slo
+        if latency == np.nan and len(self.__slo) == 0:
+            # TODO: missing value handling
+            latency = 5
+        current_slo = pd.DataFrame({"slo": [latency]})
+        slo = pd.concat([slo, current_slo])
+        slo.reset_index(inplace=True, drop=True)
+        slo.interpolate(method="linear", inplace=True)
+        self.__slo = slo
 
     def to_dict(self) -> dict:
         current_metrics = dict()
@@ -31,7 +45,8 @@ class NamespaceMetrics:
                     continue
                 m.append(metrics.iloc[-1][deploy])
             current_metrics[deploy] = m
-        return current_metrics
+        current_slo = self.__slo.iloc[-1]["slo"]
+        return {"metric": current_metrics, "slo": current_slo}
 
 
 class Metrics:
@@ -42,6 +57,9 @@ class Metrics:
 
     def insert(self, ns: str, metrics_name: str, metrics: pd.DataFrame):
         self.__metrics[ns].insert(metrics_name, metrics)
+
+    def insert_slo(self, ns: str, slo: float):
+        self.__metrics[ns].insert_slo(slo)
 
     def to_dict(self) -> dict:
         current_metrics = dict()

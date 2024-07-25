@@ -3,6 +3,7 @@ import threading
 import time
 
 from flask import Flask
+import numpy as np
 
 from .models.metrics import Metrics
 from .utils.prom import Prometheus
@@ -51,7 +52,6 @@ class Collector:
         query_latency = "sum(irate(response_latency_ms_sum{%s} [1m])) by (deployment)"
         query_res_count = "sum(irate(response_total{%s} [1m])) by (deployment)"
 
-        slo = {}
         for ns, deploy in self.__slo.items():
             try:
                 total_latency = self.__prom.query_by_deploy(query_latency, ns, [deploy])
@@ -61,9 +61,9 @@ class Collector:
                 avg_latency = (total_latency / total_response).values.flatten()[0]
             except:
                 # TODO: missing value handling
-                avg_latency = 5
-            slo[ns] = avg_latency
-        return slo
+                logger.warn(f"SLO of {ns} missing")
+                avg_latency = np.nan
+            self.__metrics.insert_slo(ns, avg_latency)
 
     def __detect(self, interval: int):
         elapsed_time = 0
@@ -76,11 +76,13 @@ class Collector:
             if elapsed_time >= self.__interval:
                 elapsed_time = 0
                 self.__fetch_metrics()
-                metrics = self.__metrics.to_dict()
-                slo = self.__fetch_slo()
+                self.__fetch_slo()
+                data = self.__metrics.to_dict()
 
-                data = {"metrics": metrics, "slo": slo}
-                requests.post("http://localhost:7770/detect", json=data)
+                try:
+                    requests.post("http://localhost:7770/detect", json=data)
+                except Exception as e:
+                    logger.error(f'Cannot send "{data}" to detector.\n\t{e}')
             time.sleep(1)
             elapsed_time += 1
 
